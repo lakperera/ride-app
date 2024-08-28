@@ -41,9 +41,13 @@ INSTALLED_APPS = [
     'corsheaders',
     'users',
     'drivers',
-    'driverFlies'
+    'driverFiles',
+    'admins',
+    'customers',
+    'passengers',
+    'fleetOperatores',
+    'rest_framework_simplejwt',
 ]
-
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -51,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'users.middleware.TokenMiddleware',  # Move custom middleware here
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -72,6 +77,13 @@ TEMPLATES = [
         },
     },
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
+}
+
 
 WSGI_APPLICATION = 'rideApp.wsgi.application'
 

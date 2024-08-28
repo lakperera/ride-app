@@ -5,7 +5,7 @@ from .views import CreateDriver,DeleteDriver,EditDriver,ListDriver,ListPersonalD
 urlpatterns = [
         path('create',CreateDriver.as_view()),
         path('delete', DeleteDriver.as_view() ),
-        path('edit', EditDriver.as_view() ),
+        path('edit/<int:driver_id>/', EditDriver.as_view() ),
         path('list', ListDriver.as_view() ),
         path('personal', ListPersonalDriver.as_view() ),
 ]

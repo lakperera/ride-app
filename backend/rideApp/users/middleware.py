@@ -1,37 +1,40 @@
-from rest_framework.response import Response
-from .serializers import UserSerializer
-from rest_framework.views import APIView
-from rest_framework.exceptions import AuthenticationFailed
-from .models import User
-import datetime
 import jwt
+from django.conf import settings
+from django.http import JsonResponse
+from .models import User
 
+class TokenMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
 
-# this moddle ii use to check if the user have jwt token
+    def __call__(self, request):
+        if request.path.startswith('/api/booking'):
+            auth_header = request.headers.get('Authorization')
+            if auth_header:
+                try:
+                    # Decode the JWT directly from the Authorization header
+                    decoded_token = jwt.decode(auth_header, settings.SECRET_KEY, algorithms=["HS256"])
+                    user_id = decoded_token.get('user_id')
+                    if not user_id:
+                        return JsonResponse({"detail": "Token missing user_id", "code": "token_invalid"}, status=401)
 
-class CookiesValidation(APIView):
-    def get(self, request):
-        token = request.COOKIES.get('token')
-        if not token:
-            raise AuthenticationFailed('Unauthenticated!')
-        try:
-            payload = jwt.decode(token, 'secret', algorithms=['HS256'])
-        except jwt.ExpiredSignatureError:
-            raise AuthenticationFailed('Token has expired')
-        except jwt.InvalidSignatureError:
-            raise AuthenticationFailed('Invalid token signature')
-        except jwt.DecodeError:
-            raise AuthenticationFailed('Token decode error')
-        except Exception as e:
-            raise AuthenticationFailed(str(e))
+                    # Retrieve the user from the database
+                    try:
+                        user = User.objects.get(user_id=user_id)
+                        # Attach the user name to the request
+                        request.user_name = user.name
 
-        user = User.objects.filter(id=payload['id']).first()
-        if user is None:
-            raise AuthenticationFailed('User not found')
+                    except User.DoesNotExist:
+                        return JsonResponse({"detail": "User not found", "code": "user_not_found"}, status=404)
 
-        serializer = UserSerializer(user)
-        return Response({
-            'message': 'successful',
-            'token': token,
-            'data': serializer.data
-        })
+                except jwt.ExpiredSignatureError:
+                    return JsonResponse({"detail": "Token has expired", "code": "token_expired"}, status=401)
+                except jwt.InvalidTokenError:
+                    return JsonResponse({"detail": "Invalid token", "code": "token_invalid"}, status=401)
+                except Exception as e:
+                    return JsonResponse({"detail": str(e), "code": "unexpected_error"}, status=500)
+            else:
+                return JsonResponse({"detail": "Authorization header not provided", "code": "authorization_header_missing"}, status=401)
+
+        response = self.get_response(request)
+        return response

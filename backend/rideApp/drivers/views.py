@@ -42,9 +42,9 @@ class CreateDriver(APIView):
 
 class DeleteDriver(APIView):
     def post(self, request):
-        user_id = request.data.get('user_id')
+        driver_id = request.data.get('driver_id')
         try:
-            driver = Driver.objects.get(user_id=user_id)
+            driver = Driver.objects.get(driver_id=driver_id)
             if driver.delete_users:
                 return Response({'error': 'Driver already deleted'}, status=status.HTTP_400_BAD_REQUEST)
             
@@ -55,9 +55,10 @@ class DeleteDriver(APIView):
 
 
 class EditDriver(APIView):
-    def put(self, request, user_id):
+    def put(self, request, driver_id):
+        print(driver_id)
         try:
-            driver = Driver.objects.get(user_id=user_id)
+            driver = Driver.objects.get(driver_id=driver_id)
         except Driver.DoesNotExist:
             return Response({'error': 'Driver not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -76,12 +77,13 @@ class ListDriver(APIView):
 
 class ListPersonalDriver(APIView):
     def get(self, request):
-        user_id = request.query_params.get('user_id')
-        if user_id is None:
+        driver_id = request.query_params.get('driver_id')
+        print(driver_id)
+        if driver_id is None:
             return Response({'error': 'User ID is required'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            driver = Driver.objects.get(user_id=user_id)
+            driver = Driver.objects.get(driver_id=driver_id)
         except Driver.DoesNotExist:
             return Response({'error': 'Driver not found'}, status=status.HTTP_404_NOT_FOUND)
 
@@ -91,9 +93,9 @@ class ListPersonalDriver(APIView):
 
 class RestoreDriver(APIView):
     def post(self, request):
-        user_id = request.data.get('user_id')
+        driver_id = request.data.get('driver_id')
         try:
-            driver = Driver.objects.get(user_id=user_id)
+            driver = Driver.objects.get(driver_id=driver_id)
             if not driver.delete_users:
                 return Response({'error': 'Driver is not deleted'}, status=status.HTTP_400_BAD_REQUEST)
 

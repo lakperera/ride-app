@@ -18,13 +18,17 @@ from django.contrib import admin
 from django.urls import path,include 
 from django.conf import settings
 from django.conf.urls.static import static
-
+   
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/',include('users.urls')),
     path('api/',include('drivers.urls')),
-    path('api/',include('driverFlies.urls')),
+    path('api/',include('driverFiles.urls')),
+    path('api/',include('admins.urls')),
+    path('api/',include('customers.urls')),
+    path('api/passengers/',include('passengers.urls')),
+    path('api/fleet-oparetore/',include('fleetOperatores.urls')),
     
 ]
 

@@ -32,16 +32,16 @@ class DriverSerializer(serializers.ModelSerializer):
         # Pop the password and handle it separately
         password = validated_data.pop('password', None)
 
-        # Assign an auto-incremented user_id
-        last_driver = Driver.objects.all().order_by('-user_id').first()
-        if last_driver and last_driver.user_id:
-            last_id_number = int(last_driver.user_id.split('/')[-1])
+        # Assign an auto-incremented driver_id
+        last_driver = Driver.objects.all().order_by('-driver_id').first()
+        if last_driver and last_driver.driver_id:
+            last_id_number = int(last_driver.driver_id.split('/')[-1])
             new_id_number = last_id_number + 1
         else:
             new_id_number = 1
 
-        formatted_user_id = f'RD/DRV/{new_id_number:03d}'
-        validated_data['user_id'] = formatted_user_id
+        formatted_driver_id = f'RD/DRV/{new_id_number:03d}'
+        validated_data['driver_id'] = formatted_driver_id
 
         # Create the instance
         instance = self.Meta.model(**validated_data)

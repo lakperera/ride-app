@@ -19,6 +19,7 @@ class UserSerializer(serializers.ModelSerializer):
         # Set the password if provided
         if password is not None:
             instance.set_password(password)
+            instance.check_password(password) 
         
         # Ensure that user_id is set uniquely if needed
         if not instance.user_id:

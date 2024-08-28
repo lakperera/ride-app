@@ -58,16 +58,16 @@ class Driver(AbstractUser):
     REQUIRED_FIELDS = ['name']  # List other fields that are required
 
     groups = models.ManyToManyField(
-        Group,
-        related_name='custom_user_set',  # Use a unique related_name
-        blank=True,
-        help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
-        verbose_name='groups',
+    Group,
+    related_name='driver_user_set',  # Use a unique related_name
+    blank=True,
+    help_text='The groups this user belongs to. A user will get all permissions granted to each of their groups.',
+    verbose_name='groups',
     )
 
     user_permissions = models.ManyToManyField(
         Permission,
-        related_name='custom_user_permissions_set',  # Use a unique related_name
+        related_name='driver_user_permissions_set',  # Use a unique related_name
         blank=True,
         help_text='Specific permissions for this user.',
         verbose_name='user permissions',
