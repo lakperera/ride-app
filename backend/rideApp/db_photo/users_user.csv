@@ -1,7 +1,0 @@
-"user_id","last_login","is_superuser","first_name","last_name","is_staff","is_active","date_joined","name","email","password","admin_category"
-"1",NULL,False,"","",False,True,"2024-08-21 14:18:16.038623+05:30","perera1","lak2p@gmail.com","pbkdf2_sha256$870000$ZqMTUvR3K9iozgD0MSWbOZ$Wet7atWW4YSTpJaPwDdtCYvALboWpOK7F0EOsc8MMDQ=","local Admin"
-"5",NULL,False,"","",False,True,"2024-08-21 16:17:27.252401+05:30","lakshitha","lak4p@gmail.com","pbkdf2_sha256$870000$riwBuibW0Vmcr8kk7B9xPY$2JaO9uIvWtMFn/KAr96sWc/iav0JCi5Da3Ca0mYUHyo=","Full Access"
-"50",NULL,False,"","",False,True,"2024-08-23 13:26:47.243979+05:30","lakshitha","lakp@gmail.com","pbkdf2_sha256$870000$yPoyT4dnryD4Pfw5umVtb1$uwmUTNZgnKRbo0QGXwzVs+dwFllTlv7h5wSy5o0rNXE=","Full Access"
-"6",NULL,False,"","",False,True,"2024-08-23 09:21:27.691219+05:30","lakshitha","lak5p@gmail.com","pbkdf2_sha256$870000$EZVdqtHyO1vrrb4fwzy9px$huMyD5CyEo03YlebFmkqnUn7VLc5PKM0VwC65LA030Q=","Full Access"
-"7",NULL,False,"","",False,True,"2024-08-23 10:03:46.459692+05:30","lakshitha","lak6p@gmail.com","pbkdf2_sha256$870000$bQBcH1mNL09a9Nrr1FxIl8$DyjKJx5EXPwVmA2c2Gmr10hQ+GwZXyLQ3+NPRLpyW8w=","Full Access"
-"hutt",NULL,False,"","",False,True,"2024-08-21 14:07:43.739234+05:30","perera1","lak1p@gmail.com","pbkdf2_sha256$870000$ROpEdkn3yi8crQvRxVTFtk$CWs2jzS7jJ/hFgPgbQJvr6/lqsoa3KUl95jqV9FbBWw=","local Admin"

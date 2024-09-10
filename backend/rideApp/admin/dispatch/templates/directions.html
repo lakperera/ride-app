@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Directions</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBWRFhYqcx7MDRTw4BONTK1_1Ho8V8G7I8&libraries=places&callback=initializeMap" async defer></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 600px;
+        }
+        .container {
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .via-location, .return-via-location {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .via-location input, .return-via-location input {
+            width: 70%;
+            padding: 10px;
+        }
+        .via-location button, .return-via-location button {
+            margin-left: 10px;
+            padding: 10px;
+        }
+        #return-journey-fields {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <button id="next-page-btn" onclick="goToNextPage()">Go to Next Page</button>
+    <div class="container">
+        <h2>Get Directions</h2>
+        <!-- Primary Journey -->
+        <input type="text" id="origin-input" placeholder="Pick-up Location">
+        <input type="text" id="destination-input" placeholder="Drop-off Location">
+        <div id="via-container"></div>
+        <button onclick="addViaLocation()">Add Via Location</button>
+
+        <!-- Return Journey Button -->
+        <button id="return-journey-btn" onclick="toggleReturnJourney()">Add Return Journey</button>
+
+        <!-- Return Journey Fields -->
+        <div id="return-journey-fields">
+            <h3>Return Journey</h3>
+            <input type="text" id="return-origin-input" placeholder="Return Pick-up Location">
+            <input type="text" id="return-destination-input" placeholder="Return Drop-off Location">
+            <div id="return-via-container"></div>
+            <button onclick="addReturnViaLocation()">Add Return Via Location</button>
+            <button onclick="removeReturnJourney()">Remove Return Journey</button>
+        </div>
+
+        <!-- Buttons for Search -->
+        <button onclick="getOutwardDirections()">Search Outward Directions</button>
+        <button onclick="getReturnDirections()">Search Return Directions</button>
+        <button onclick="saveRide()">Save Data</button>
+    </div>
+    
+    <div id="map"></div>
+
+<script>
+    let map, directionsService, outwardDirectionsRenderer, returnDirectionsRenderer;
+    let autocompleteOrigin, autocompleteDestination, returnAutocompleteOrigin, returnAutocompleteDestination;
+    let viaLocations = [], returnViaLocations = [];
+    let pickupLat, pickupLng, dropLat, dropLng, returnPickupLat, returnPickupLng, returnDropLat, returnDropLng, distance;
+
+    function initializeMap() {
+        directionsService = new google.maps.DirectionsService();
+        const mapOptions = {
+            zoom: 7,
+            center: { lat: 51.5072, lng: -0.1276 }, // Default center: London
+        };
+        map = new google.maps.Map(document.getElementById('map'), mapOptions);
+
+        outwardDirectionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            polylineOptions: {
+                strokeColor: 'blue'
+            },
+            suppressMarkers: false
+        });
+        
+        returnDirectionsRenderer = new google.maps.DirectionsRenderer({
+            map: map,
+            polylineOptions: {
+                strokeColor: 'green'
+            },
+            suppressMarkers: false
+        });
+
+        autocompleteOrigin = new google.maps.places.Autocomplete(document.getElementById('origin-input'));
+        autocompleteDestination = new google.maps.places.Autocomplete(document.getElementById('destination-input'));
+    }
+
+    function addViaLocation() {
+        const viaIndex = viaLocations.length;
+        const viaContainer = document.getElementById('via-container');
+        const div = document.createElement('div');
+        div.className = 'via-location';
+        div.innerHTML = `
+            <input type="text" id="via-input-${viaIndex}" placeholder="Via Location">
+            <button type="button" onclick="removeViaLocation(${viaIndex})">-</button>
+        `;
+        viaContainer.appendChild(div);
+        const autocomplete = new google.maps.places.Autocomplete(document.getElementById(`via-input-${viaIndex}`));
+        viaLocations.push(autocomplete);
+    }
+
+    function addReturnViaLocation() {
+        const viaIndex = returnViaLocations.length;
+        const viaContainer = document.getElementById('return-via-container');
+        const div = document.createElement('div');
+        div.className = 'return-via-location';
+        div.innerHTML = `
+            <input type="text" id="return-via-input-${viaIndex}" placeholder="Return Via Location">
+            <button type="button" onclick="removeReturnViaLocation(${viaIndex})">-</button>
+        `;
+        viaContainer.appendChild(div);
+        const autocomplete = new google.maps.places.Autocomplete(document.getElementById(`return-via-input-${viaIndex}`));
+        returnViaLocations.push(autocomplete);
+    }
+
+    function removeViaLocation(index) {
+        const viaContainer = document.getElementById('via-container');
+        const viaLocationDiv = viaContainer.children[index];
+        if (viaLocationDiv) {
+            viaContainer.removeChild(viaLocationDiv);
+            viaLocations.splice(index, 1);
+        }
+    }
+
+    function removeReturnViaLocation(index) {
+        const viaContainer = document.getElementById('return-via-container');
+        const viaLocationDiv = viaContainer.children[index];
+        if (viaLocationDiv) {
+            viaContainer.removeChild(viaLocationDiv);
+            returnViaLocations.splice(index, 1);
+        }
+    }
+
+    function toggleReturnJourney() {
+        const returnJourneyFields = document.getElementById('return-journey-fields');
+        if (returnJourneyFields.style.display === 'none') {
+            returnJourneyFields.style.display = 'block';
+
+            returnAutocompleteOrigin = new google.maps.places.Autocomplete(document.getElementById('return-origin-input'));
+            returnAutocompleteDestination = new google.maps.places.Autocomplete(document.getElementById('return-destination-input'));
+
+        } else {
+            removeReturnJourney();
+        }
+    }
+
+    function removeReturnJourney() {
+        document.getElementById('return-journey-fields').style.display = 'none';
+        document.getElementById('return-origin-input').value = '';
+        document.getElementById('return-destination-input').value = '';
+        returnViaLocations = [];
+        document.getElementById('return-via-container').innerHTML = '';
+    }
+
+    function getOutwardDirections() {
+        const origin = document.getElementById('origin-input').value;
+        const destination = document.getElementById('destination-input').value;
+
+        if (!origin || !destination) {
+            alert('Please provide both pick-up and drop-off locations.');
+            return;
+        }
+
+        const waypoints = viaLocations.map(function(autocomplete) {
+            const place = autocomplete.getPlace();
+            return place && place.geometry ? {
+                location: place.formatted_address,
+                stopover: true
+            } : null;
+        }).filter(waypoint => waypoint !== null);
+
+        const request = {
+            origin: origin,
+            destination: destination,
+            waypoints: waypoints,
+            travelMode: 'DRIVING'
+        };
+
+        directionsService.route(request, function(result, status) {
+            if (status === 'OK') {
+                outwardDirectionsRenderer.setDirections(result);
+                const route = result.routes[0].legs[0];
+                pickupLat = route.start_location.lat();
+                pickupLng = route.start_location.lng();
+                dropLat = route.end_location.lat();
+                dropLng = route.end_location.lng();
+                distance = parseFloat(route.distance.text.replace(/[^\d.]/g, ''));
+            } else {
+                alert('Outward directions request failed due to ' + status);
+            }
+        });
+    }
+
+    function getReturnDirections() {
+        const returnOrigin = document.getElementById('return-origin-input').value;
+        const returnDestination = document.getElementById('return-destination-input').value;
+
+        if (!returnOrigin || !returnDestination) {
+            alert('Please provide both return pick-up and drop-off locations.');
+            return;
+        }
+
+        const returnWaypoints = returnViaLocations.map(function(autocomplete) {
+            const place = autocomplete.getPlace();
+            return place && place.geometry ? {
+                location: place.formatted_address,
+                stopover: true
+            } : null;
+        }).filter(waypoint => waypoint !== null);
+
+        const returnRequest = {
+            origin: returnOrigin,
+            destination: returnDestination,
+            waypoints: returnWaypoints,
+            travelMode: 'DRIVING'
+        };
+
+        directionsService.route(returnRequest, function(result, status) {
+            if (status === 'OK') {
+                returnDirectionsRenderer.setDirections(result);
+                const route = result.routes[0].legs[0];
+                returnPickupLat = route.start_location.lat();
+                returnPickupLng = route.start_location.lng();
+                returnDropLat = route.end_location.lat();
+                returnDropLng = route.end_location.lng();
+            } else {
+                alert('Return directions request failed due to ' + status);
+            }
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function saveRide() {
+        if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
+            alert('Please get directions first.');
+            return;
+        }
+
+        const viaLocationData = viaLocations.map((autocomplete) => {
+            const place = autocomplete.getPlace();
+            if (!place || !place.geometry) {
+                alert('Please select a valid via location.');
+                return null;
+            }
+            return {
+                via_lat: place.geometry.location.lat(),
+                via_lng: place.geometry.location.lng()
+            };
+        }).filter(item => item !== null);
+
+        let returnViaLocationData = [];
+        if (document.getElementById('return-journey-fields').style.display !== 'none') {
+            returnViaLocationData = returnViaLocations.map((autocomplete) => {
+                const place = autocomplete.getPlace();
+                if (!place || !place.geometry) {
+                    alert('Please select a valid return via location.');
+                    return null;
+                }
+                return {
+                    via_lat: place.geometry.location.lat(),
+                    via_lng: place.geometry.location.lng()
+                };
+            }).filter(item => item !== null);
+        }
+
+        // Determine if there are via locations
+        const is_vialocation = viaLocationData.length > 0;
+        const is_return_vialocation = returnViaLocationData.length > 0;
+
+        const requestData = {
+            pickup_lat: pickupLat,
+            pickup_lng: pickupLng,
+            drop_lat: dropLat,
+            drop_lng: dropLng,
+            via_locations: viaLocationData,
+            is_vialocation: is_vialocation,
+            return_journey: document.getElementById('return-journey-fields').style.display !== 'none',
+            return_pickup_lat: returnPickupLat,
+            return_pickup_lng: returnPickupLng,
+            return_drop_lat: returnDropLat,
+            return_drop_lng: returnDropLng,
+            return_via_locations: returnViaLocationData,
+            is_return_vialocation: is_return_vialocation,
+            destination : destination
+        };
+
+        console.log('Request data being sent:', requestData); // Log the request data
+
+        try {
+            const response = await fetch('/direction/save-ride/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error('Error Response:', errorData); // Log the server's error response
+                throw new Error(errorData.message || 'Unknown error');
+            }
+
+            const data = await response.json();
+            alert(data.message);
+        } catch (error) {
+            console.error('Error in saveRide:', error); // Log the exact error
+            alert('An error occurred while saving the ride.');
+        }
+    }
+    // Function to navigate to the next page
+    function goToNextPage() {
+        window.location.href = '/direction/save-ride/vehicle/'; // Replace '/next-page-url' with the actual URL of the next page
+    }
+</script>
+
+</body>
+</html>

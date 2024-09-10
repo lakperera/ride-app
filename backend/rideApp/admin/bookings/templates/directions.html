@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Directions</title>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBWRFhYqcx7MDRTw4BONTK1_1Ho8V8G7I8&libraries=places&callback=initializeMap" async defer></script>
+    <style>
+        #map {
+            height: 600px;
+            width: 600px;
+        }
+        .container {
+            margin: 20px auto;
+            max-width: 600px;
+            text-align: center;
+        }
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            margin: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Get Directions</h2>
+        <input type="text" id="origin-input" placeholder="Pick-up Location">
+        <input type="text" id="destination-input" placeholder="Drop-off Location">
+        <button onclick="getDirections()">Search</button>
+        <button onclick="saveRide()">Save Data</button>
+    </div>
+    
+    <div id="map"></div>
+
+<script>
+    let map, directionsService, directionsRenderer, autocompleteOrigin, autocompleteDestination;
+
+    function initializeMap() {
+        // Initialize Google Maps with default settings
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer();
+
+        const mapOptions = {
+            zoom: 7,
+            center: {lat: 51.5072, lng: -0.1276}, // Default center: San Francisco
+        };
+
+        map = new google.maps.Map(document.getElementById('map'), mapOptions);
+        directionsRenderer.setMap(map);
+
+        const originInput = document.getElementById('origin-input');
+        const destinationInput = document.getElementById('destination-input');
+
+        // Autocomplete for origin and destination inputs
+        autocompleteOrigin = new google.maps.places.Autocomplete(originInput);
+        autocompleteDestination = new google.maps.places.Autocomplete(destinationInput);
+
+        // Add event listeners to get the place details (including lat/lng)
+        autocompleteOrigin.addListener('place_changed', function() {
+            const place = autocompleteOrigin.getPlace();
+            if (place.geometry) {
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
+                console.log('Pick-up Location: Lat:', lat, 'Lng:', lng);
+            } else {
+                alert("Please select a valid pick-up location.");
+            }
+        });
+
+        autocompleteDestination.addListener('place_changed', function() {
+            const place = autocompleteDestination.getPlace();
+            if (place.geometry) {
+                const lat = place.geometry.location.lat();
+                const lng = place.geometry.location.lng();
+                console.log('Drop-off Location: Lat:', lat, 'Lng:', lng);
+            } else {
+                alert("Please select a valid drop-off location.");
+            }
+        });
+    }
+    function getDirections() {
+        const origin = document.getElementById('origin-input').value;
+        const destination = document.getElementById('destination-input').value;
+
+        if (!origin || !destination) {
+            alert('Please provide both pick-up and drop-off locations.');
+            return;
+        }
+
+        const request = {
+            origin: origin,
+            destination: destination,
+            travelMode: 'DRIVING'
+        };
+
+        directionsService.route(request, function(result, status) {
+            if (status === 'OK') {
+                directionsRenderer.setDirections(result);
+
+                // Extract and store distance and duration
+                const route = result.routes[0].legs[0];
+                pickupLat = route.start_location.lat();
+                pickupLng = route.start_location.lng();
+                dropLat = route.end_location.lat();
+                dropLng = route.end_location.lng();
+                distance = route.distance.text;
+                duration = route.duration.text;
+            } else {
+                alert('Directions request failed due to ' + status);
+            }
+        });
+    }
+
+    function saveRide() {
+        if (!pickupLat || !pickupLng || !dropLat || !dropLng) {
+            alert('Please get directions first.');
+            return;
+        }
+
+        const data = {
+            pickup_lat: pickupLat,
+            pickup_lng: pickupLng,
+            drop_lat: dropLat,
+            drop_lng: dropLng,
+            distance: distance,
+            duration: duration
+        };
+
+        fetch('/direction/save-ride/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken') // Include CSRF token if needed
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            alert(data.message);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialize map when the page loads
+    window.onload = initializeMap;
+</script>
+
+</body>
+</html>
